@@ -19,8 +19,9 @@ import Navbar from '../components/Navbar.astro';
         <div>
           <h2 class="text-2xl font-bold text-ink">Unggah Karya Siswa</h2>
           <p class="text-sm text-ink-soft mt-1">
-            Pilihlah satu atau beberapa foto/video sekaligus jika ingin mengunggah banyak karya murid dalam satu waktu.
-            Nanti hanya isi nama, kelas, kategori, dan judul untuk masing-masing kolom yang semuanya harus terisi dulu sebelum bisa disimpan.
+            Pilih satu atau beberapa foto/video sekaligus kalau mau unggah banyak karya dalam satu waktu.
+            Nanti kamu tinggal isi nama, kelas, kategori, dan judul untuk masing-masing di bawah —
+            semua kolom harus terisi dulu sebelum bisa disimpan.
           </p>
         </div>
 
@@ -42,7 +43,22 @@ import Navbar from '../components/Navbar.astro';
       </section>
 
       <section class="bg-surface border-2 border-line rounded-2xl p-6">
-        <h2 class="text-2xl font-bold mb-4 text-ink">Karya Tersimpan</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-ink">Karya Tersimpan</h2>
+          <label class="flex items-center gap-1.5 text-xs font-bold text-ink-soft cursor-pointer">
+            <input type="checkbox" id="select-all" class="w-4 h-4" />
+            Pilih semua
+          </label>
+        </div>
+
+        <div id="bulk-bar" class="hidden sticky top-16 z-10 bg-ink text-white rounded-xl px-4 py-2.5 flex items-center justify-between mb-3">
+          <span id="bulk-count" class="text-sm font-bold"></span>
+          <div class="flex gap-2">
+            <button id="bulk-cancel" class="text-xs font-bold text-white/70 hover:text-white px-2">Batal</button>
+            <button id="bulk-delete" class="text-xs font-bold bg-red-500 hover:bg-red-600 rounded-lg px-3 py-1.5">Hapus Terpilih</button>
+          </div>
+        </div>
+
         <div id="karya-list" class="space-y-2">
           <p class="text-sm text-ink-faint">Memuat...</p>
         </div>
@@ -59,7 +75,7 @@ import Navbar from '../components/Navbar.astro';
       </div>
     </div>
   </div>
-  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg z-50"></div>
+  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg z-50 flex items-center gap-2"></div>
 
   <script>
     // @ts-nocheck
@@ -79,6 +95,9 @@ import Navbar from '../components/Navbar.astro';
     const submitAllBtn = document.getElementById('submit-all-btn');
     const uploadStatus = document.getElementById('upload-status');
     const listEl = document.getElementById('karya-list');
+    const bulkBar = document.getElementById('bulk-bar');
+    const bulkCount = document.getElementById('bulk-count');
+    const selectAllBox = document.getElementById('select-all');
 
     const CATEGORY_STYLE = {
       Gambar: 'bg-gambar-50 text-gambar-600',
@@ -91,6 +110,9 @@ import Navbar from '../components/Navbar.astro';
     const AVATAR_COLORS = ['#FF6B85', '#4FA8F0', '#A672E8', '#4CC985', '#FFA83D', '#37C2AC'];
     const KELAS_OPTIONS = ['1', '2', '3', '4', '5', '6'];
     const KATEGORI_OPTIONS = ['Gambar', 'Cerita', 'Puisi', 'Eksperimen', 'Video', 'Infografis'];
+
+    let karyaMap = new Map();
+    let selectedIds = new Set();
 
     function initials(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
     function avatarColor(name) {
@@ -141,7 +163,10 @@ import Navbar from '../components/Navbar.astro';
     }
     function showToast(text, isError) {
       const toast = document.getElementById('toast');
-      toast.textContent = text;
+      const icon = isError
+        ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+      toast.innerHTML = icon + '<span>' + text + '</span>';
       toast.style.background = isError ? '#D64545' : '#4A3F35';
       toast.classList.remove('hidden');
       clearTimeout(showToast._t);
@@ -308,8 +333,20 @@ import Navbar from '../components/Navbar.astro';
       }, 2000);
     });
 
+    // ---------- DAFTAR + PILIH + HAPUS ----------
+    function updateBulkBar() {
+      const n = selectedIds.size;
+      bulkBar.classList.toggle('hidden', n === 0);
+      bulkCount.textContent = `${n} karya terpilih`;
+      selectAllBox.checked = n > 0 && n === karyaMap.size;
+    }
+
     async function loadKarya() {
       listEl.innerHTML = '<p class="text-sm text-ink-faint">Memuat...</p>';
+      selectedIds.clear();
+      karyaMap.clear();
+      updateBulkBar();
+
       const q = query(collection(db, 'karya'), orderBy('createdAt', 'desc'), limit(50));
       const snap = await getDocs(q);
       if (snap.empty) {
@@ -319,42 +356,98 @@ import Navbar from '../components/Navbar.astro';
       listEl.innerHTML = '';
       snap.forEach((docSnap) => {
         const k = docSnap.data();
+        karyaMap.set(docSnap.id, k);
+
         const row = document.createElement('div');
+        row.dataset.rowId = docSnap.id;
         row.className = 'flex items-center gap-3 bg-canvas border-2 border-line rounded-2xl p-2.5';
         row.innerHTML = `
+          <input type="checkbox" class="select-box w-4 h-4 shrink-0" />
           <span class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style="background:${avatarColor(k.nama)}">${initials(k.nama)}</span>
           <div class="min-w-0 flex-1">
             <p class="font-bold text-sm text-ink truncate">${k.judul}</p>
             <p class="text-xs text-ink-faint truncate">${k.nama} &middot; Kelas ${k.kelas}</p>
           </div>
           <span class="text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${CATEGORY_STYLE[k.kategori] || 'bg-line text-ink-soft'}">${k.kategori}</span>
-          <button class="delete-btn shrink-0 text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1" data-id="${docSnap.id}">Hapus</button>
+          <button class="delete-btn shrink-0 text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">Hapus</button>
         `;
-        row.querySelector('.delete-btn').addEventListener('click', () => hapusKarya(docSnap.id, k));
+        row.querySelector('.select-box').addEventListener('change', (e) => {
+          if (e.target.checked) selectedIds.add(docSnap.id);
+          else selectedIds.delete(docSnap.id);
+          updateBulkBar();
+        });
+        row.querySelector('.delete-btn').addEventListener('click', () => hapusSatu(docSnap.id, k));
         listEl.appendChild(row);
       });
     }
 
-    async function hapusKarya(id, k) {
+    selectAllBox.addEventListener('change', () => {
+      const boxes = document.querySelectorAll('.select-box');
+      boxes.forEach((box) => { box.checked = selectAllBox.checked; });
+      selectedIds = selectAllBox.checked ? new Set(karyaMap.keys()) : new Set();
+      updateBulkBar();
+    });
+
+    document.getElementById('bulk-cancel').addEventListener('click', () => {
+      selectedIds.clear();
+      document.querySelectorAll('.select-box').forEach((box) => { box.checked = false; });
+      updateBulkBar();
+    });
+
+    async function deleteFromCloudinaryAndFirestore(id, k) {
+      const publicId = getPublicId(k);
+      if (publicId) {
+        const res = await fetch('/api/delete-karya', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicId, resourceType: k.mediaType }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Gagal hapus file di Cloudinary');
+      }
+      await deleteDoc(doc(db, 'karya', id));
+    }
+
+    async function hapusSatu(id, k) {
       const ok = await showConfirm(`Hapus karya "${k.judul}"? Tindakan ini tidak bisa dibatalkan.`);
       if (!ok) return;
-      const publicId = getPublicId(k);
+      const row = document.querySelector(`[data-row-id="${id}"]`);
+      row?.classList.add('row-removing');
       try {
-        if (publicId) {
-          const res = await fetch('/api/delete-karya', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ publicId, resourceType: k.mediaType }),
-          });
-          const json = await res.json();
-          if (!res.ok) throw new Error(json.error || 'Gagal hapus file di Cloudinary');
-        }
-        await deleteDoc(doc(db, 'karya', id));
+        await new Promise((r) => setTimeout(r, 300));
+        await deleteFromCloudinaryAndFirestore(id, k);
         showToast('Karya berhasil dihapus.');
         loadKarya();
       } catch (err) {
         showToast('Gagal menghapus: ' + err.message, true);
+        row?.classList.remove('row-removing');
       }
     }
+
+    document.getElementById('bulk-delete').addEventListener('click', async () => {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+      const ok = await showConfirm(`Hapus ${ids.length} karya terpilih? Tindakan ini tidak bisa dibatalkan.`);
+      if (!ok) return;
+
+      ids.forEach((id) => {
+        document.querySelector(`[data-row-id="${id}"]`)?.classList.add('row-removing');
+      });
+      await new Promise((r) => setTimeout(r, 300));
+
+      let sukses = 0, gagal = 0;
+      for (const id of ids) {
+        const k = karyaMap.get(id);
+        if (!k) continue;
+        try {
+          await deleteFromCloudinaryAndFirestore(id, k);
+          sukses++;
+        } catch (err) {
+          gagal++;
+        }
+      }
+      showToast(`${sukses} karya berhasil dihapus${gagal > 0 ? `, ${gagal} gagal` : ''}.`);
+      loadKarya();
+    });
   </script>
 </Layout>
