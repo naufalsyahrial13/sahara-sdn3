@@ -1,0 +1,360 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+---
+<Layout title="Halaman Guru - SAHARA">
+  <Navbar current="admin" />
+
+  <main class="max-w-2xl mx-auto px-4 py-10">
+    <div id="gate" class="max-w-sm mx-auto bg-surface border-2 border-line rounded-2xl p-6">
+      <h2 class="text-2xl font-bold mb-1">Masuk Halaman Guru</h2>
+      <p class="text-sm text-ink-soft mb-4">Masukkan password untuk mulai mengelola karya siswa.</p>
+      <input id="password-input" type="password" placeholder="Password" class="w-full border-2 border-line rounded-xl px-3 py-2.5 mb-3 focus:border-brand-500 outline-none" />
+      <button id="login-btn" class="w-full bg-brand-500 hover:bg-brand-600 text-white rounded-xl py-2.5 font-bold transition">Masuk</button>
+      <p id="login-error" class="text-red-500 text-sm mt-2 hidden">Password salah, coba lagi ya.</p>
+    </div>
+
+    <div id="panel" class="hidden space-y-8">
+      <section class="bg-surface border-2 border-line rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 class="text-2xl font-bold text-ink">Unggah Karya Siswa</h2>
+          <p class="text-sm text-ink-soft mt-1">
+            Pilihlah satu atau beberapa foto/video sekaligus jika ingin mengunggah banyak karya murid dalam satu waktu.
+            Nanti hanya isi nama, kelas, kategori, dan judul untuk masing-masing kolom yang semuanya harus terisi dulu sebelum bisa disimpan.
+          </p>
+        </div>
+
+        <div>
+          <label for="file-picker" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-2xl py-9 px-4 cursor-pointer transition hover:border-brand-500 hover:bg-brand-50">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand-500">
+              <path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/>
+            </svg>
+            <span class="font-bold text-ink text-sm">Klik untuk pilih foto atau video</span>
+            <span class="text-xs text-ink-faint">Bisa pilih lebih dari satu file sekaligus</span>
+          </label>
+          <input id="file-picker" type="file" accept="image/*,video/*" multiple class="hidden" />
+          <p id="file-count" class="text-xs text-ink-soft mt-2 font-bold hidden"></p>
+        </div>
+
+        <div id="queue-list" class="space-y-2"></div>
+        <button id="submit-all-btn" class="hidden w-full bg-brand-500 hover:bg-brand-600 text-white rounded-xl py-2.5 font-bold transition">Arsipkan Semua Karya</button>
+        <p id="upload-status" class="text-sm text-ink-soft"></p>
+      </section>
+
+      <section class="bg-surface border-2 border-line rounded-2xl p-6">
+        <h2 class="text-2xl font-bold mb-4 text-ink">Karya Tersimpan</h2>
+        <div id="karya-list" class="space-y-2">
+          <p class="text-sm text-ink-faint">Memuat...</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-ink/40 z-50 items-center justify-center p-4">
+    <div class="bg-surface rounded-2xl max-w-xs w-full p-5 text-center space-y-4">
+      <p id="confirm-text" class="text-sm text-ink font-bold"></p>
+      <div class="flex gap-2">
+        <button id="confirm-cancel" class="flex-1 rounded-xl py-2 font-bold text-ink-soft bg-line">Batal</button>
+        <button id="confirm-ok" class="flex-1 rounded-xl py-2 font-bold text-white bg-red-500 hover:bg-red-600">Hapus</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg z-50"></div>
+
+  <script>
+    // @ts-nocheck
+    import { db } from '../lib/firebase.js';
+    import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+    import { compressImage } from '../lib/compress.js';
+
+    const ADMIN_PASSWORD = import.meta.env.PUBLIC_ADMIN_PASSWORD;
+    const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const UPLOAD_PRESET = import.meta.env.PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    const gate = document.getElementById('gate');
+    const panel = document.getElementById('panel');
+    const filePicker = document.getElementById('file-picker');
+    const fileCount = document.getElementById('file-count');
+    const queueList = document.getElementById('queue-list');
+    const submitAllBtn = document.getElementById('submit-all-btn');
+    const uploadStatus = document.getElementById('upload-status');
+    const listEl = document.getElementById('karya-list');
+
+    const CATEGORY_STYLE = {
+      Gambar: 'bg-gambar-50 text-gambar-600',
+      Cerita: 'bg-cerita-50 text-cerita-600',
+      Puisi: 'bg-puisi-50 text-puisi-600',
+      Eksperimen: 'bg-eksperimen-50 text-eksperimen-600',
+      Video: 'bg-video-50 text-video-600',
+      Infografis: 'bg-infografis-50 text-infografis-600',
+    };
+    const AVATAR_COLORS = ['#FF6B85', '#4FA8F0', '#A672E8', '#4CC985', '#FFA83D', '#37C2AC'];
+    const KELAS_OPTIONS = ['1', '2', '3', '4', '5', '6'];
+    const KATEGORI_OPTIONS = ['Gambar', 'Cerita', 'Puisi', 'Eksperimen', 'Video', 'Infografis'];
+
+    function initials(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
+    function avatarColor(name) {
+      const sum = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+    }
+    function getPublicId(k) {
+      if (k.publicId) return k.publicId;
+      const m = (k.mediaUrl || '').match(/\/upload\/v\d+\/(.+)\.[a-zA-Z0-9]+$/);
+      return m ? m[1] : null;
+    }
+    function fireConfetti() {
+      const colors = ['#FF6B85', '#4FA8F0', '#A672E8', '#4CC985', '#FFA83D', '#37C2AC', '#EF798A'];
+      for (let i = 0; i < 36; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.left = (40 + Math.random() * 20) + 'vw';
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 120 + Math.random() * 180;
+        piece.style.setProperty('--confetti-end', `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist - 100}px)`);
+        document.body.appendChild(piece);
+        requestAnimationFrame(() => piece.classList.add('fire'));
+        setTimeout(() => piece.remove(), 1000);
+      }
+    }
+
+    function showConfirm(text) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-text').textContent = text;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const cleanup = (result) => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          resolve(result);
+        };
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+      });
+    }
+    function showToast(text, isError) {
+      const toast = document.getElementById('toast');
+      toast.textContent = text;
+      toast.style.background = isError ? '#D64545' : '#4A3F35';
+      toast.classList.remove('hidden');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    if (sessionStorage.getItem('sahara-auth') === 'true') {
+      gate.classList.add('hidden');
+      panel.classList.remove('hidden');
+      loadKarya();
+    }
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const val = document.getElementById('password-input').value;
+      if (val === ADMIN_PASSWORD) {
+        sessionStorage.setItem('sahara-auth', 'true');
+        gate.classList.add('hidden');
+        panel.classList.remove('hidden');
+        loadKarya();
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    });
+
+    let queue = [];
+
+    filePicker.addEventListener('change', () => {
+      queue = Array.from(filePicker.files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isVideo: file.type.startsWith('video'),
+        row: null,
+      }));
+      fileCount.textContent = queue.length > 0 ? `${queue.length} file dipilih` : '';
+      fileCount.classList.toggle('hidden', queue.length === 0);
+      renderQueue();
+    });
+
+    function renderQueue() {
+      queueList.innerHTML = '';
+      submitAllBtn.classList.toggle('hidden', queue.length === 0);
+      uploadStatus.textContent = '';
+
+      queue.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'flex gap-3 bg-canvas border-2 border-line rounded-2xl p-3';
+        row.innerHTML = `
+          ${item.isVideo
+            ? `<video src="${item.previewUrl}" class="w-16 h-16 rounded-xl object-cover bg-line shrink-0"></video>`
+            : `<img src="${item.previewUrl}" class="w-16 h-16 rounded-xl object-cover bg-line shrink-0" />`}
+          <div class="flex-1 grid grid-cols-2 gap-2">
+            <input placeholder="Nama Siswa" class="nama-input col-span-2 border-2 border-line rounded-lg px-2 py-1 text-sm" />
+            <select class="kelas-input border-2 border-line rounded-lg px-2 py-1 text-sm">
+              <option value="">Kelas</option>
+              ${KELAS_OPTIONS.map((k) => `<option>${k}</option>`).join('')}
+            </select>
+            <select class="kategori-input border-2 border-line rounded-lg px-2 py-1 text-sm">
+              <option value="">Kategori</option>
+              ${KATEGORI_OPTIONS.map((k) => `<option>${k}</option>`).join('')}
+            </select>
+            <input placeholder="Judul Karya" class="judul-input col-span-2 border-2 border-line rounded-lg px-2 py-1 text-sm" />
+            <p class="status-text col-span-2 text-xs text-ink-faint"></p>
+          </div>
+          <button class="remove-btn shrink-0 text-ink-faint hover:text-red-500 text-lg leading-none">&times;</button>
+        `;
+        item.row = row;
+        item.namaInput = row.querySelector('.nama-input');
+        item.kelasInput = row.querySelector('.kelas-input');
+        item.kategoriInput = row.querySelector('.kategori-input');
+        item.judulInput = row.querySelector('.judul-input');
+        item.statusText = row.querySelector('.status-text');
+
+        row.querySelector('.remove-btn').addEventListener('click', () => {
+          queue.splice(idx, 1);
+          fileCount.textContent = queue.length > 0 ? `${queue.length} file dipilih` : '';
+          fileCount.classList.toggle('hidden', queue.length === 0);
+          renderQueue();
+        });
+        queueList.appendChild(row);
+      });
+    }
+
+    function markRow(item, incomplete) {
+      item.row.classList.remove(incomplete ? 'border-line' : 'border-red-400');
+      item.row.classList.add(incomplete ? 'border-red-400' : 'border-line');
+      item.statusText.textContent = incomplete ? 'Lengkapi data ini dulu' : '';
+      item.statusText.className = incomplete
+        ? 'status-text col-span-2 text-xs text-red-500 font-bold'
+        : 'status-text col-span-2 text-xs text-ink-faint';
+    }
+
+    async function uploadToCloudinary(file, resourceType) {
+      const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
+      const data = new FormData();
+      data.append('file', file);
+      data.append('upload_preset', UPLOAD_PRESET);
+      data.append('folder', 'karya');
+      const res = await fetch(url, { method: 'POST', body: data });
+      if (!res.ok) throw new Error('Upload ke Cloudinary gagal');
+      const json = await res.json();
+      return { url: json.secure_url, publicId: json.public_id };
+    }
+
+    submitAllBtn.addEventListener('click', async () => {
+      const incompleteItems = queue.filter((item) => {
+        return !item.namaInput.value.trim() || !item.kelasInput.value || !item.kategoriInput.value || !item.judulInput.value.trim();
+      });
+      queue.forEach((item) => markRow(item, incompleteItems.includes(item)));
+
+      if (incompleteItems.length > 0) {
+        uploadStatus.textContent = `Ada ${incompleteItems.length} karya belum lengkap datanya (ditandai merah). Lengkapi dulu sebelum diarsipkan — belum ada yang diunggah.`;
+        uploadStatus.className = 'text-sm text-red-500 font-bold';
+        return;
+      }
+
+      uploadStatus.className = 'text-sm text-ink-soft';
+      submitAllBtn.disabled = true;
+      let sukses = 0, gagal = 0;
+
+      for (const item of queue) {
+        const nama = item.namaInput.value.trim();
+        const kelas = item.kelasInput.value;
+        const kategori = item.kategoriInput.value;
+        const judul = item.judulInput.value.trim();
+
+        item.statusText.textContent = 'Mengunggah...';
+        item.statusText.className = 'status-text col-span-2 text-xs text-ink-soft';
+
+        try {
+          let mediaUrl, publicId, mediaType = 'image';
+          if (item.isVideo) {
+            mediaType = 'video';
+            if (item.file.size > 15 * 1024 * 1024) throw new Error('Video terlalu besar (maks 15MB)');
+            const r = await uploadToCloudinary(item.file, 'video');
+            mediaUrl = r.url; publicId = r.publicId;
+          } else {
+            const compressed = await compressImage(item.file);
+            const r = await uploadToCloudinary(compressed, 'image');
+            mediaUrl = r.url; publicId = r.publicId;
+          }
+          await addDoc(collection(db, 'karya'), {
+            nama, kelas, kategori, judul, mediaType, mediaUrl, publicId,
+            createdAt: serverTimestamp(),
+          });
+          item.statusText.textContent = 'Berhasil ✓';
+          item.statusText.className = 'status-text col-span-2 text-xs text-eksperimen-600 font-bold';
+          sukses++;
+        } catch (err) {
+          item.statusText.textContent = 'Gagal: ' + err.message;
+          item.statusText.className = 'status-text col-span-2 text-xs text-red-500';
+          gagal++;
+        }
+      }
+
+      uploadStatus.textContent = `${sukses} berhasil${gagal > 0 ? `, ${gagal} gagal` : ''}.`;
+      if (sukses > 0) fireConfetti();
+      submitAllBtn.disabled = false;
+      loadKarya();
+
+      setTimeout(() => {
+        queue = [];
+        filePicker.value = '';
+        fileCount.classList.add('hidden');
+        renderQueue();
+      }, 2000);
+    });
+
+    async function loadKarya() {
+      listEl.innerHTML = '<p class="text-sm text-ink-faint">Memuat...</p>';
+      const q = query(collection(db, 'karya'), orderBy('createdAt', 'desc'), limit(50));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        listEl.innerHTML = '<p class="text-sm text-ink-faint">Belum ada karya.</p>';
+        return;
+      }
+      listEl.innerHTML = '';
+      snap.forEach((docSnap) => {
+        const k = docSnap.data();
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-3 bg-canvas border-2 border-line rounded-2xl p-2.5';
+        row.innerHTML = `
+          <span class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style="background:${avatarColor(k.nama)}">${initials(k.nama)}</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold text-sm text-ink truncate">${k.judul}</p>
+            <p class="text-xs text-ink-faint truncate">${k.nama} &middot; Kelas ${k.kelas}</p>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${CATEGORY_STYLE[k.kategori] || 'bg-line text-ink-soft'}">${k.kategori}</span>
+          <button class="delete-btn shrink-0 text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1" data-id="${docSnap.id}">Hapus</button>
+        `;
+        row.querySelector('.delete-btn').addEventListener('click', () => hapusKarya(docSnap.id, k));
+        listEl.appendChild(row);
+      });
+    }
+
+    async function hapusKarya(id, k) {
+      const ok = await showConfirm(`Hapus karya "${k.judul}"? Tindakan ini tidak bisa dibatalkan.`);
+      if (!ok) return;
+      const publicId = getPublicId(k);
+      try {
+        if (publicId) {
+          const res = await fetch('/api/delete-karya', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId, resourceType: k.mediaType }),
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Gagal hapus file di Cloudinary');
+        }
+        await deleteDoc(doc(db, 'karya', id));
+        showToast('Karya berhasil dihapus.');
+        loadKarya();
+      } catch (err) {
+        showToast('Gagal menghapus: ' + err.message, true);
+      }
+    }
+  </script>
+</Layout>

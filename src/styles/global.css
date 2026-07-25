@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #FFF9EE;
+  --color-surface: #FFFFFF;
+  --color-line: #F1E7D0;
+
+  --color-ink: #4A3F35;
+  --color-ink-soft: #8A7B68;
+  --color-ink-faint: #B8AA92;
+
+  --color-brand-50: #FFEDF1;
+  --color-brand-100: #FFD6DE;
+  --color-brand-500: #EF798A;
+  --color-brand-600: #D65670;
+
+  --color-gambar-50: #FFEEF1;
+  --color-gambar-500: #FF6B85;
+  --color-gambar-600: #E8425F;
+
+  --color-cerita-50: #E8F4FF;
+  --color-cerita-500: #4FA8F0;
+  --color-cerita-600: #2D82CB;
+
+  --color-puisi-50: #F3EBFF;
+  --color-puisi-500: #A672E8;
+  --color-puisi-600: #8347C9;
+
+  --color-eksperimen-50: #E7F9EE;
+  --color-eksperimen-500: #4CC985;
+  --color-eksperimen-600: #2FA868;
+
+  --color-video-50: #FFF3E0;
+  --color-video-500: #FFA83D;
+  --color-video-600: #E8841A;
+
+  --color-infografis-50: #E4FAF6;
+  --color-infografis-500: #37C2AC;
+  --color-infografis-600: #219685;
+
+  --font-display: "Baloo 2", ui-rounded, "Segoe UI", sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.karya-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.karya-card:hover {
+  transform: translateY(-4px) rotate(-1deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karya-card:hover { transform: none; }
+}
+
+.confetti-piece {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+.confetti-piece.fire {
+  animation: confetti-burst 0.9s ease-out forwards;
+}
+@keyframes confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: var(--confetti-end) rotate(540deg) scale(0.6); }
+}
+
+.filter-btn, .kelas-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.filter-btn:hover, .kelas-btn:hover {
+  transform: translateY(-2px);
+}
+.filter-btn.active, .kelas-btn.active {
+  box-shadow: 0 0 0 2px var(--color-ink);
+  transform: scale(1.05);
+}
+.kelas-btn {
+  background: var(--color-line);
+  color: var(--color-ink-soft);
+}
+.kelas-btn.active {
+  background: var(--color-ink);
+  color: white;
+  box-shadow: none;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.shown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modal-box {
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.modal-box.shown {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .modal-box { transition: none; opacity: 1; transform: none; }
+}
+.page-blobs {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}

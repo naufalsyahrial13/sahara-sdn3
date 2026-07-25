@@ -1,0 +1,28 @@
+---
+import '../styles/global.css';
+const { title = 'SAHARA - SDN 3 Tirtomoyo' } = Astro.props;
+---
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#EF798A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <title>{title}</title>
+</head>
+<body class="bg-canvas text-ink min-h-screen antialiased">
+  <div class="page-blobs" aria-hidden="true">
+    <div class="blob" style="width:140px;height:140px;background:#FFD166;top:4vh;left:-50px;"></div>
+    <div class="blob" style="width:90px;height:90px;background:#EF798A;top:18vh;right:5vw;"></div>
+    <div class="blob" style="width:110px;height:110px;background:#4FA8F0;top:42vh;left:3vw;"></div>
+    <div class="blob" style="width:80px;height:80px;background:#4CC985;top:62vh;right:8vw;"></div>
+    <div class="blob" style="width:130px;height:130px;background:#A672E8;top:82vh;left:6vw;"></div>
+    <div class="blob" style="width:100px;height:100px;background:#FFA83D;top:104vh;right:-30px;"></div>
+    <div class="blob" style="width:95px;height:95px;background:#37C2AC;top:128vh;left:10vw;"></div>
+  </div>
+  <slot />
+</body>
+</html>
