@@ -24,7 +24,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{css,js,html,svg,png,ico}'],
+        globPatterns: ['**/*.{css,js,svg,png,ico}'],
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
