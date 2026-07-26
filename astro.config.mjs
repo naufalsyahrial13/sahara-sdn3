@@ -1,8 +1,8 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
-import vercel from '@astrojs/vercel';
 import AstroPWA from '@vite-pwa/astro';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   output: 'server',
@@ -39,6 +39,6 @@ export default defineConfig({
     }),
   ],
   vite: {
-    plugins: [tailwindcss()]
-  }
+    plugins: [tailwindcss()],
+  },
 });
