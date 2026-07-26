@@ -14,6 +14,8 @@ const { title = 'SAHARA - SDN 3 Tirtomoyo' } = Astro.props;
   <title>{title}</title>
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <script is:inline src="/registerSW.js"></script>
 </head>
 <body class="bg-canvas text-ink min-h-screen antialiased">
   <div class="page-blobs" aria-hidden="true">
