@@ -75,12 +75,39 @@ import Navbar from '../components/Navbar.astro';
       </div>
     </div>
   </div>
+  <div id="edit-modal" class="hidden fixed inset-0 bg-ink/40 z-50 items-center justify-center p-4">
+    <div class="bg-surface rounded-2xl max-w-sm w-full p-5 space-y-3">
+      <h3 class="text-lg font-bold text-ink">Edit Karya</h3>
+      <div>
+        <label class="text-xs font-bold text-ink-soft">Nama Siswa</label>
+        <input id="edit-nama" type="text" class="w-full border-2 border-line rounded-xl px-3 py-2 mt-1 focus:border-brand-500 outline-none" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs font-bold text-ink-soft">Kelas</label>
+          <select id="edit-kelas" class="w-full border-2 border-line rounded-xl px-3 py-2 mt-1 focus:border-brand-500 outline-none"></select>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-ink-soft">Kategori</label>
+          <select id="edit-kategori" class="w-full border-2 border-line rounded-xl px-3 py-2 mt-1 focus:border-brand-500 outline-none"></select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-ink-soft">Judul</label>
+        <input id="edit-judul" type="text" class="w-full border-2 border-line rounded-xl px-3 py-2 mt-1 focus:border-brand-500 outline-none" />
+      </div>
+      <p id="edit-error" class="text-red-500 text-xs font-bold hidden"></p>
+      <div class="flex gap-2 pt-1">
+        <button id="edit-cancel" class="flex-1 rounded-xl py-2 font-bold text-ink-soft bg-line">Batal</button>
+        <button id="edit-save" class="flex-1 rounded-xl py-2 font-bold text-white bg-brand-500 hover:bg-brand-600">Simpan</button>
+      </div>
+    </div>
+  </div>
   <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg z-50 flex items-center gap-2"></div>
-
   <script>
     // @ts-nocheck
     import { db } from '../lib/firebase.js';
-    import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+    import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
     import { compressImage } from '../lib/compress.js';
 
     const ADMIN_PASSWORD = import.meta.env.PUBLIC_ADMIN_PASSWORD;
@@ -369,6 +396,7 @@ import Navbar from '../components/Navbar.astro';
             <p class="text-xs text-ink-faint truncate">${k.nama} &middot; Kelas ${k.kelas}</p>
           </div>
           <span class="text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${CATEGORY_STYLE[k.kategori] || 'bg-line text-ink-soft'}">${k.kategori}</span>
+          <button class="edit-btn shrink-0 text-ink-soft hover:text-ink text-xs font-bold px-2 py-1">Edit</button>
           <button class="delete-btn shrink-0 text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">Hapus</button>
         `;
         row.querySelector('.select-box').addEventListener('change', (e) => {
@@ -376,6 +404,7 @@ import Navbar from '../components/Navbar.astro';
           else selectedIds.delete(docSnap.id);
           updateBulkBar();
         });
+        row.querySelector('.edit-btn').addEventListener('click', () => openEditModal(docSnap.id, k));
         row.querySelector('.delete-btn').addEventListener('click', () => hapusSatu(docSnap.id, k));
         listEl.appendChild(row);
       });
@@ -448,6 +477,67 @@ import Navbar from '../components/Navbar.astro';
       }
       showToast(`${sukses} karya berhasil dihapus${gagal > 0 ? `, ${gagal} gagal` : ''}.`);
       loadKarya();
+    });
+
+    // ---------- EDIT KARYA ----------
+    const editModal = document.getElementById('edit-modal');
+    const editNama = document.getElementById('edit-nama');
+    const editKelas = document.getElementById('edit-kelas');
+    const editKategori = document.getElementById('edit-kategori');
+    const editJudul = document.getElementById('edit-judul');
+    const editError = document.getElementById('edit-error');
+    let editingId = null;
+
+    editKelas.innerHTML = KELAS_OPTIONS.map((k) => `<option value="${k}">${k}</option>`).join('');
+    editKategori.innerHTML = KATEGORI_OPTIONS.map((k) => `<option value="${k}">${k}</option>`).join('');
+
+    function openEditModal(id, k) {
+      editingId = id;
+      editNama.value = k.nama || '';
+      editKelas.value = k.kelas || '';
+      editKategori.value = k.kategori || '';
+      editJudul.value = k.judul || '';
+      editError.classList.add('hidden');
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      editingId = null;
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+
+    document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+
+    document.getElementById('edit-save').addEventListener('click', async () => {
+      const nama = editNama.value.trim();
+      const kelas = editKelas.value;
+      const kategori = editKategori.value;
+      const judul = editJudul.value.trim();
+
+      if (!nama || !kelas || !kategori || !judul) {
+        editError.textContent = 'Semua kolom harus diisi.';
+        editError.classList.remove('hidden');
+        return;
+      }
+      if (!editingId) return;
+
+      const saveBtn = document.getElementById('edit-save');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Menyimpan...';
+      try {
+        await updateDoc(doc(db, 'karya', editingId), { nama, kelas, kategori, judul });
+        showToast('Karya berhasil diperbarui.');
+        closeEditModal();
+        loadKarya();
+      } catch (err) {
+        editError.textContent = 'Gagal menyimpan: ' + err.message;
+        editError.classList.remove('hidden');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Simpan';
+      }
     });
   </script>
 </Layout>
