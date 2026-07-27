@@ -6,40 +6,59 @@ import Navbar from '../components/Navbar.astro';
   <Navbar current="beranda" />
 
   <header class="relative max-w-5xl mx-auto px-4 pt-10 pb-6 text-center overflow-hidden">
-    <h1 class="relative text-3xl md:text-4xl font-extrabold text-ink">Museum Digital SAHARA</h1>
-    <p class="relative mt-2 text-ink-soft">Setiap Hari Berkarya, Setiap Karya Menginspirasi</p>
-    <p id="stat-badge" class="relative inline-block mt-4 bg-white border-2 border-line rounded-full px-4 py-1.5 text-xs font-bold text-ink-soft"></p>
+    <span class="float-badge hidden sm:flex absolute -top-1 left-8 text-3xl" style="animation-delay:0s">🎨</span>
+    <span class="float-badge hidden sm:flex absolute top-10 right-6 text-3xl" style="animation-delay:0.9s">📖</span>
+    <span class="float-badge hidden sm:flex absolute bottom-0 left-20 text-2xl" style="animation-delay:1.6s">🔬</span>
+    <span class="float-badge hidden sm:flex absolute bottom-4 right-20 text-2xl" style="animation-delay:2.3s">🎬</span>
+
+    <h1 class="fade-in-up relative text-3xl md:text-4xl font-extrabold text-ink">Museum Digital SAHARA</h1>
+    <p class="fade-in-up relative mt-2 text-ink-soft" style="animation-delay:0.1s">Setiap Hari Berkarya, Setiap Karya Menginspirasi</p>
+    <p id="stat-badge" class="fade-in-up relative inline-block mt-4 bg-white border-2 border-line rounded-full px-4 py-1.5 text-xs font-bold text-ink-soft" style="animation-delay:0.2s"></p>
   </header>
 
-  <div class="max-w-5xl mx-auto px-4 mb-3 flex flex-wrap gap-2 justify-center" id="filter-tabs">
-    <button data-cat="Semua" class="filter-btn bg-ink text-white active">Semua</button>
-    <button data-cat="Gambar" class="filter-btn bg-gambar-50 text-gambar-600">Gambar</button>
-    <button data-cat="Cerita" class="filter-btn bg-cerita-50 text-cerita-600">Cerita</button>
-    <button data-cat="Puisi" class="filter-btn bg-puisi-50 text-puisi-600">Puisi</button>
-    <button data-cat="Eksperimen" class="filter-btn bg-eksperimen-50 text-eksperimen-600">Eksperimen</button>
-    <button data-cat="Video" class="filter-btn bg-video-50 text-video-600">Video</button>
-    <button data-cat="Infografis" class="filter-btn bg-infografis-50 text-infografis-600">Infografis</button>
+  <div class="max-w-5xl mx-auto px-4 mb-3 flex gap-2 overflow-x-auto no-scrollbar" id="filter-tabs">
+    <button data-cat="Semua" class="filter-btn bg-ink text-white active shrink-0">Semua</button>
+    <button data-cat="Gambar" class="filter-btn bg-gambar-50 text-gambar-600 shrink-0">Gambar</button>
+    <button data-cat="Cerita" class="filter-btn bg-cerita-50 text-cerita-600 shrink-0">Cerita</button>
+    <button data-cat="Puisi" class="filter-btn bg-puisi-50 text-puisi-600 shrink-0">Puisi</button>
+    <button data-cat="Eksperimen" class="filter-btn bg-eksperimen-50 text-eksperimen-600 shrink-0">Eksperimen</button>
+    <button data-cat="Video" class="filter-btn bg-video-50 text-video-600 shrink-0">Video</button>
+    <button data-cat="Infografis" class="filter-btn bg-infografis-50 text-infografis-600 shrink-0">Infografis</button>
   </div>
 
-  <div class="max-w-5xl mx-auto px-4 mb-6 flex flex-wrap gap-2 justify-center" id="kelas-tabs">
-    <button data-kelas="Semua" class="kelas-btn active">Semua Kelas</button>
-    <button data-kelas="1" class="kelas-btn">Kelas 1</button>
-    <button data-kelas="2" class="kelas-btn">Kelas 2</button>
-    <button data-kelas="3" class="kelas-btn">Kelas 3</button>
-    <button data-kelas="4" class="kelas-btn">Kelas 4</button>
-    <button data-kelas="5" class="kelas-btn">Kelas 5</button>
-    <button data-kelas="6" class="kelas-btn">Kelas 6</button>
+  <div class="max-w-5xl mx-auto px-4 mb-6 flex gap-2 overflow-x-auto no-scrollbar" id="kelas-tabs">
+    <button data-kelas="Semua" class="kelas-btn active shrink-0">Semua Kelas</button>
+    <button data-kelas="1" class="kelas-btn shrink-0">Kelas 1</button>
+    <button data-kelas="2" class="kelas-btn shrink-0">Kelas 2</button>
+    <button data-kelas="3" class="kelas-btn shrink-0">Kelas 3</button>
+    <button data-kelas="4" class="kelas-btn shrink-0">Kelas 4</button>
+    <button data-kelas="5" class="kelas-btn shrink-0">Kelas 5</button>
+    <button data-kelas="6" class="kelas-btn shrink-0">Kelas 6</button>
   </div>
 
   <main class="max-w-5xl mx-auto px-4 pb-16">
-    <div id="loading" class="text-center text-ink-faint py-10">Memuat karya...</div>
-    <div id="empty" class="hidden text-center text-ink-faint py-10">Belum ada karya di kategori ini.</div>
+    <div id="loading" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map(() => (
+        <div class="rounded-2xl overflow-hidden bg-surface border-2 border-line">
+          <div class="skeleton h-36 w-full"></div>
+          <div class="p-2.5 space-y-2">
+            <div class="skeleton h-3 w-3/4 rounded-full"></div>
+            <div class="skeleton h-2.5 w-1/2 rounded-full"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+    <div id="empty" class="hidden text-center text-ink-faint py-16">
+      <p class="text-4xl mb-2">🖼️</p>
+      <p class="font-bold text-ink">Belum ada karya di kategori ini.</p>
+      <p class="text-sm mt-1">Coba pilih kategori atau kelas lain ya.</p>
+    </div>
     <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
   </main>
 
-  <div id="modal" class="hidden fixed inset-0 bg-ink/60 z-50 items-center justify-center p-4">
-    <div id="modal-box" class="modal-box bg-surface rounded-2xl max-w-lg w-full overflow-hidden relative">
-      <button id="modal-close" class="absolute top-2 right-2 bg-white/90 rounded-full w-8 h-8 font-bold z-10">✕</button>
+  <div id="modal" class="hidden fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 items-center justify-center p-4">
+    <div id="modal-box" class="modal-box bg-surface rounded-2xl max-w-lg w-full overflow-hidden relative shadow-2xl">
+      <button id="modal-close" class="absolute top-2 right-2 bg-white/90 hover:bg-white hover:scale-110 rounded-full w-8 h-8 font-bold z-10 transition">✕</button>
       <div id="modal-media"></div>
       <div class="p-4">
         <h3 id="modal-title" class="font-bold text-lg text-ink"></h3>
@@ -66,6 +85,10 @@ import Navbar from '../components/Navbar.astro';
     const CATEGORY_TEXT = {
       Gambar: 'text-gambar-600', Cerita: 'text-cerita-600', Puisi: 'text-puisi-600',
       Eksperimen: 'text-eksperimen-600', Video: 'text-video-600', Infografis: 'text-infografis-600',
+    };
+    const CATEGORY_HEX = {
+      Gambar: '#FF6B85', Cerita: '#4FA8F0', Puisi: '#A672E8',
+      Eksperimen: '#4CC985', Video: '#FFA83D', Infografis: '#37C2AC',
     };
     const CATEGORY_ICON = {
       Gambar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
@@ -122,7 +145,8 @@ import Navbar from '../components/Navbar.astro';
         card.className = 'karya-card reveal rounded-2xl overflow-hidden bg-surface border-2 border-line cursor-pointer';
         card.style.transitionDelay = `${Math.min(idx, 8) * 40}ms`;
         card.innerHTML = `
-          <div class="relative">
+          <div class="h-1.5" style="background:${CATEGORY_HEX[k.kategori] || '#B8AA92'}"></div>
+          <div class="relative overflow-hidden">
             ${
               k.mediaType === 'video'
                 ? `<video src="${thumbUrl}" class="w-full h-36 object-cover" muted></video>

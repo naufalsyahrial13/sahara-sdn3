@@ -157,3 +157,45 @@ button:not(:disabled) {
 @keyframes row-poof {
   to { opacity: 0; transform: scale(0.9) translateX(16px); }
 }
+/* === Tambahan redesain Beranda === */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fade-in-up 0.6s ease both;
+}
+
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.float-badge {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-line) 25%, #fff 50%, var(--color-line) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.karya-card img, .karya-card video {
+  transition: transform 0.4s ease;
+}
+.karya-card:hover img, .karya-card:hover video {
+  transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-badge, .skeleton { animation: none; }
+  .karya-card img, .karya-card video { transition: none; }
+  .karya-card:hover img, .karya-card:hover video { transform: none; }
+}

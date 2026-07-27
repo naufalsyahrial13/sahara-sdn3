@@ -1,6 +1,22 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Navbar from '../components/Navbar.astro';
+
+const misi = [
+  'Melaksanakan program dan kegiatan sekolah untuk meningkatkan keimanan, ketaqwaan, dan akhlak mulia peserta didik melalui penerapan ajaran agama di sekolah.',
+  'Membangun lingkungan sekolah yang inovatif, bertoleransi dalam kebhinekaan global, mencintai budaya lokal, dan menjunjung nilai gotong royong.',
+  'Mengembangkan dan memfasilitasi peningkatan prestasi peserta didik baik akademik maupun non-akademik melalui pendampingan dan kerja sama.',
+  'Menanamkan kesadaran pentingnya penguasaan teknologi dan seni budaya melalui pembelajaran, bimbingan, dan ekstrakurikuler sesuai bakat, minat, dan kebutuhan.',
+];
+
+const kategori = [
+  { nama: 'Gambar', bg: 'bg-gambar-50', text: 'text-gambar-600' },
+  { nama: 'Cerita', bg: 'bg-cerita-50', text: 'text-cerita-600' },
+  { nama: 'Puisi', bg: 'bg-puisi-50', text: 'text-puisi-600' },
+  { nama: 'Eksperimen', bg: 'bg-eksperimen-50', text: 'text-eksperimen-600' },
+  { nama: 'Video', bg: 'bg-video-50', text: 'text-video-600' },
+  { nama: 'Infografis', bg: 'bg-infografis-50', text: 'text-infografis-600' },
+];
 ---
 <Layout title="Tentang - SAHARA SDN 3 Tirtomoyo">
   <Navbar current="tentang" />
@@ -9,22 +25,36 @@ import Navbar from '../components/Navbar.astro';
     <h1 class="relative text-3xl font-extrabold text-ink">Tentang SAHARA</h1>
     <p class="relative mt-2 text-ink-soft max-w-lg mx-auto">
       Satu Hari, Satu Karya — museum digital karya siswa SDN 3 Tirtomoyo, dikembangkan oleh
-      Tim KKN Universitas Diponegoro Desa Banyakprodo 2026.
+      Tim KKN II Universitas Diponegoro Desa Banyakprodo 2025/2026.
     </p>
   </header>
 
   <main class="max-w-3xl mx-auto px-4 pb-16 space-y-6">
+
+    <!-- Apa itu SAHARA -->
+    <section class="reveal shown bg-surface border-2 border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg text-ink mb-2">Apa itu SAHARA?</h2>
+      <p class="text-sm text-ink-soft leading-relaxed">
+        SAHARA memajang karya terbaik siswa SDN 3 Tirtomoyo secara digital — mulai dari gambar,
+        cerita, dan puisi, sampai video dan hasil eksperimen. Karya yang diunggah guru bisa
+        dilihat kapan saja oleh siswa, orang tua, maupun siapa pun yang ingin melihat
+        kreativitas anak-anak Banyakprodo, tanpa perlu datang langsung ke sekolah.
+      </p>
+    </section>
+
+    <!-- Profil sekolah -->
     <section class="reveal shown bg-surface border-2 border-line rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5">
       <img src="/logo-sekolah.jpg" alt="Logo SDN 3 Tirtomoyo" class="w-28 h-28 rounded-2xl object-cover shrink-0" />
       <div>
         <h2 class="font-bold text-lg text-ink mb-1">Profil Sekolah</h2>
         <p class="text-sm text-ink-soft">
-          SD Negeri 3 Tirtomoyo adalah sekolah dasar di Desa Banyakprodo, Kecamatan Tirtomoyo,
-          Kabupaten Wonogiri, Jawa Tengah.
+          SD Negeri 3 Tirtomoyo berada di Desa Banyakprodo, Kecamatan Tirtomoyo, Kabupaten
+          Wonogiri, Jawa Tengah — Jln. Kamboja No. 2, Padangan, Banyakprodo, Tirtomoyo.
         </p>
       </div>
     </section>
 
+    <!-- Visi -->
     <section class="reveal shown bg-brand-50 border-2 border-brand-100 rounded-2xl p-6 text-center">
       <p class="text-xs font-bold text-brand-600 uppercase tracking-wide mb-2">Visi</p>
       <p class="text-ink font-display font-semibold text-lg italic">
@@ -33,20 +63,49 @@ import Navbar from '../components/Navbar.astro';
       </p>
     </section>
 
-    <section class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <div class="reveal shown bg-gambar-50 rounded-2xl p-4 text-center">
-        <p class="text-2xl font-extrabold text-gambar-600" id="stat-gambar">-</p>
-        <p class="text-xs font-bold text-ink-soft mt-1">Gambar</p>
-      </div>
-      <div class="reveal shown bg-cerita-50 rounded-2xl p-4 text-center">
-        <p class="text-2xl font-extrabold text-cerita-600" id="stat-cerita">-</p>
-        <p class="text-xs font-bold text-ink-soft mt-1">Cerita</p>
-      </div>
-      <div class="reveal shown bg-eksperimen-50 rounded-2xl p-4 text-center">
-        <p class="text-2xl font-extrabold text-eksperimen-600" id="stat-total">-</p>
-        <p class="text-xs font-bold text-ink-soft mt-1">Total Karya</p>
+    <!-- Misi -->
+    <section class="reveal shown bg-surface border-2 border-line rounded-2xl p-6">
+      <p class="text-xs font-bold text-brand-600 uppercase tracking-wide mb-3">Misi</p>
+      <ol class="space-y-3">
+        {misi.map((item, i) => (
+          <li class="flex gap-3 text-sm text-ink-soft leading-relaxed">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-600 font-bold text-xs flex items-center justify-center">{i + 1}</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- Statistik + kategori jadi satu -->
+    <section class="reveal shown bg-surface border-2 border-line rounded-2xl p-6 text-center">
+      <p class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1">Karya yang sudah dipajang</p>
+      <p class="text-4xl font-display font-extrabold text-brand-600" id="stat-total">-</p>
+      <div class="flex flex-wrap justify-center gap-2 mt-4">
+        {kategori.map((k) => (
+          <span class={`${k.bg} ${k.text} text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5`}>
+            {k.nama}
+            <span class="stat-kategori" data-kategori={k.nama}>-</span>
+          </span>
+        ))}
       </div>
     </section>
+
+    <!-- Cara pakai -->
+    <section class="reveal shown bg-surface border-2 border-line rounded-2xl p-6">
+      <h2 class="font-display font-bold text-lg text-ink mb-3">Cara Melihat Karya</h2>
+      <ol class="space-y-2 text-sm text-ink-soft">
+        <li><span class="font-semibold text-ink">1.</span> Buka halaman Beranda.</li>
+        <li><span class="font-semibold text-ink">2.</span> Pilih kategori atau kelas untuk menyaring karya yang ingin dilihat.</li>
+        <li><span class="font-semibold text-ink">3.</span> Klik salah satu karya untuk melihatnya lebih besar beserta ceritanya.</li>
+      </ol>
+    </section>
+
+    <!-- Tim penyusun -->
+    <p class="reveal shown text-center text-xs text-ink-faint pt-2">
+      Dibangun oleh Tim KKN II Universitas Diponegoro Desa Banyakprodo 2025/2026, bekerja sama
+      dengan SD Negeri 3 Tirtomoyo.
+    </p>
+
   </main>
 
   <script>
@@ -58,9 +117,11 @@ import Navbar from '../components/Navbar.astro';
       try {
         const snap = await getDocs(collection(db, 'karya'));
         const items = snap.docs.map((d) => d.data());
-        document.getElementById('stat-gambar').textContent = items.filter((k) => k.kategori === 'Gambar').length;
-        document.getElementById('stat-cerita').textContent = items.filter((k) => k.kategori === 'Cerita').length;
         document.getElementById('stat-total').textContent = items.length;
+        document.querySelectorAll('.stat-kategori').forEach((el) => {
+          const kat = el.getAttribute('data-kategori');
+          el.textContent = items.filter((k) => k.kategori === kat).length;
+        });
       } catch (err) {
         console.error(err);
       }
