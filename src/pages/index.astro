@@ -16,24 +16,38 @@ import Navbar from '../components/Navbar.astro';
     <p id="stat-badge" class="fade-in-up relative inline-block mt-4 bg-white border-2 border-line rounded-full px-4 py-1.5 text-xs font-bold text-ink-soft" style="animation-delay:0.2s"></p>
   </header>
 
-  <div class="max-w-5xl mx-auto px-4 mb-3 flex gap-2 overflow-x-auto no-scrollbar" id="filter-tabs">
-    <button data-cat="Semua" class="filter-btn bg-ink text-white active shrink-0">Semua</button>
-    <button data-cat="Gambar" class="filter-btn bg-gambar-50 text-gambar-600 shrink-0">Gambar</button>
-    <button data-cat="Cerita" class="filter-btn bg-cerita-50 text-cerita-600 shrink-0">Cerita</button>
-    <button data-cat="Puisi" class="filter-btn bg-puisi-50 text-puisi-600 shrink-0">Puisi</button>
-    <button data-cat="Eksperimen" class="filter-btn bg-eksperimen-50 text-eksperimen-600 shrink-0">Eksperimen</button>
-    <button data-cat="Video" class="filter-btn bg-video-50 text-video-600 shrink-0">Video</button>
-    <button data-cat="Infografis" class="filter-btn bg-infografis-50 text-infografis-600 shrink-0">Infografis</button>
-  </div>
+  <div class="max-w-5xl mx-auto px-4 mb-6 flex gap-3">
+    <div class="relative flex-1">
+      <button id="cat-trigger" type="button" class="w-full flex items-center justify-between gap-2 bg-white border-2 border-line rounded-xl px-4 py-2.5 text-sm font-bold text-ink">
+        <span class="flex items-center gap-1.5 truncate">🎨 <span id="cat-label">Semua Kategori</span></span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="cat-panel" class="hidden absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
+        <button data-cat="Semua" class="filter-btn bg-ink text-white active">Semua</button>
+        <button data-cat="Gambar" class="filter-btn bg-gambar-50 text-gambar-600">Gambar</button>
+        <button data-cat="Cerita" class="filter-btn bg-cerita-50 text-cerita-600">Cerita</button>
+        <button data-cat="Puisi" class="filter-btn bg-puisi-50 text-puisi-600">Puisi</button>
+        <button data-cat="Eksperimen" class="filter-btn bg-eksperimen-50 text-eksperimen-600">Eksperimen</button>
+        <button data-cat="Video" class="filter-btn bg-video-50 text-video-600">Video</button>
+        <button data-cat="Infografis" class="filter-btn bg-infografis-50 text-infografis-600">Infografis</button>
+      </div>
+    </div>
 
-  <div class="max-w-5xl mx-auto px-4 mb-6 flex gap-2 overflow-x-auto no-scrollbar" id="kelas-tabs">
-    <button data-kelas="Semua" class="kelas-btn active shrink-0">Semua Kelas</button>
-    <button data-kelas="1" class="kelas-btn shrink-0">Kelas 1</button>
-    <button data-kelas="2" class="kelas-btn shrink-0">Kelas 2</button>
-    <button data-kelas="3" class="kelas-btn shrink-0">Kelas 3</button>
-    <button data-kelas="4" class="kelas-btn shrink-0">Kelas 4</button>
-    <button data-kelas="5" class="kelas-btn shrink-0">Kelas 5</button>
-    <button data-kelas="6" class="kelas-btn shrink-0">Kelas 6</button>
+    <div class="relative flex-1">
+      <button id="kelas-trigger" type="button" class="w-full flex items-center justify-between gap-2 bg-white border-2 border-line rounded-xl px-4 py-2.5 text-sm font-bold text-ink">
+        <span class="flex items-center gap-1.5 truncate">🎓 <span id="kelas-label">Semua Kelas</span></span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="kelas-panel" class="hidden absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
+        <button data-kelas="Semua" class="kelas-btn active">Semua Kelas</button>
+        <button data-kelas="1" class="kelas-btn">Kelas 1</button>
+        <button data-kelas="2" class="kelas-btn">Kelas 2</button>
+        <button data-kelas="3" class="kelas-btn">Kelas 3</button>
+        <button data-kelas="4" class="kelas-btn">Kelas 4</button>
+        <button data-kelas="5" class="kelas-btn">Kelas 5</button>
+        <button data-kelas="6" class="kelas-btn">Kelas 6</button>
+      </div>
+    </div>
   </div>
 
   <main class="max-w-5xl mx-auto px-4 pb-16">
@@ -224,5 +238,49 @@ import Navbar from '../components/Navbar.astro';
     });
 
     loadKarya();
+  </script>
+
+  <script>
+    const catTrigger = document.getElementById('cat-trigger');
+    const catPanel = document.getElementById('cat-panel');
+    const catLabel = document.getElementById('cat-label');
+    const kelasTrigger = document.getElementById('kelas-trigger');
+    const kelasPanel = document.getElementById('kelas-panel');
+    const kelasLabel = document.getElementById('kelas-label');
+
+    function closePanels() {
+      catPanel?.classList.add('hidden');
+      kelasPanel?.classList.add('hidden');
+    }
+
+    catTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = catPanel.classList.contains('hidden');
+      closePanels();
+      if (willOpen) catPanel.classList.remove('hidden');
+    });
+    kelasTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = kelasPanel.classList.contains('hidden');
+      closePanels();
+      if (willOpen) kelasPanel.classList.remove('hidden');
+    });
+    catPanel?.addEventListener('click', (e) => e.stopPropagation());
+    kelasPanel?.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', closePanels);
+
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const txt = btn.textContent.trim();
+        catLabel.textContent = txt === 'Semua' ? 'Semua Kategori' : txt;
+        catPanel.classList.add('hidden');
+      });
+    });
+    document.querySelectorAll('.kelas-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        kelasLabel.textContent = btn.textContent.trim();
+        kelasPanel.classList.add('hidden');
+      });
+    });
   </script>
 </Layout>
