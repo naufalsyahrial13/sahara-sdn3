@@ -207,10 +207,14 @@ import Navbar from '../components/Navbar.astro';
     function closeModal() {
       const modal = document.getElementById('modal');
       const box = document.getElementById('modal-box');
+      const media = document.getElementById('modal-media');
+      const video = media.querySelector('video');
+      if (video) video.pause();
       box.classList.remove('shown');
       setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        media.innerHTML = '';
       }, 200);
     }
 
