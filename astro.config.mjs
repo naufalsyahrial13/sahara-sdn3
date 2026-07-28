@@ -11,7 +11,7 @@ export default defineConfig({
     AstroPWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'SAHARA - Museum Digital SDN 3 Tirtomoyo',
+        name: 'SAHARA - Museum Digital',
         short_name: 'SAHARA',
         description: 'Museum digital karya harian siswa SDN 3 Tirtomoyo',
         theme_color: '#EF798A',
