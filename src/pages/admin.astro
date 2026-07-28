@@ -18,6 +18,11 @@ import Navbar from '../components/Navbar.astro';
     </div>
 
     <div id="panel" class="hidden space-y-8">
+      <div class="flex items-center justify-between">
+        <h1 class="text-lg font-bold text-ink">Halaman Guru</h1>
+        <button id="logout-btn" class="text-xs font-bold text-ink-soft hover:text-red-500 border-2 border-line hover:border-red-300 rounded-xl px-3 py-1.5 transition">Keluar</button>
+      </div>
+
       <section class="fade-in-up bg-surface border-2 border-line rounded-2xl p-6 space-y-4">
         <div class="flex items-start gap-3">
           <span class="shrink-0 w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-bold text-sm flex items-center justify-center">1</span>
@@ -224,6 +229,14 @@ import Navbar from '../components/Navbar.astro';
       } else {
         document.getElementById('login-error').classList.remove('hidden');
       }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      sessionStorage.removeItem('sahara-auth');
+      panel.classList.add('hidden');
+      gate.classList.remove('hidden');
+      document.getElementById('password-input').value = '';
+      document.getElementById('login-error').classList.add('hidden');
     });
 
     let queue = [];
