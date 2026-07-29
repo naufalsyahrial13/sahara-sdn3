@@ -31,7 +31,7 @@ import Navbar from '../components/Navbar.astro';
             <p class="text-sm text-ink-soft mt-1">
               Pilih satu atau beberapa foto/video sekaligus kalau mau unggah banyak karya dalam satu waktu.
               Nanti kamu tinggal isi nama, kelas, kategori, dan judul untuk masing-masing di bawah —
-              semua kolom harus terisi dulu sebelum bisa disimpan.
+              boleh dikosongkan kalau karyanya berupa hasil kegiatan bersama (misalnya kegiatan literasi satu kelas/kelompok), bukan karya perorangan.
             </p>
           </div>
         </div>
@@ -319,26 +319,16 @@ import Navbar from '../components/Navbar.astro';
     }
 
     submitAllBtn.addEventListener('click', async () => {
-      const incompleteItems = queue.filter((item) => {
-        return !item.namaInput.value.trim() || !item.kelasInput.value || !item.kategoriInput.value || !item.judulInput.value.trim();
-      });
-      queue.forEach((item) => markRow(item, incompleteItems.includes(item)));
-
-      if (incompleteItems.length > 0) {
-        uploadStatus.textContent = `Ada ${incompleteItems.length} karya belum lengkap datanya (ditandai merah). Lengkapi dulu sebelum diarsipkan — belum ada yang diunggah.`;
-        uploadStatus.className = 'text-sm text-red-500 font-bold';
-        return;
-      }
-
+      uploadStatus.textContent = '';
       uploadStatus.className = 'text-sm text-ink-soft';
       submitAllBtn.disabled = true;
       let sukses = 0, gagal = 0;
 
       for (const item of queue) {
-        const nama = item.namaInput.value.trim();
-        const kelas = item.kelasInput.value;
-        const kategori = item.kategoriInput.value;
-        const judul = item.judulInput.value.trim();
+        const nama = item.namaInput.value.trim() || 'Kegiatan Bersama';
+        const kelas = item.kelasInput.value || '-';
+        const kategori = item.kategoriInput.value || 'Gambar';
+        const judul = item.judulInput.value.trim() || 'Tanpa Judul';
 
         item.statusText.textContent = 'Mengunggah...';
         item.statusText.className = 'status-text col-span-2 text-xs text-ink-soft';
