@@ -50,6 +50,13 @@ import Navbar from '../components/Navbar.astro';
     </div>
   </div>
 
+  <div class="max-w-5xl mx-auto px-4 mb-6">
+    <div class="relative">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" type="text" placeholder="Cari nama siswa atau judul karya..." class="w-full bg-white border-2 border-line rounded-xl pl-10 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-brand-500 outline-none" />
+    </div>
+  </div>
+
   <main class="max-w-5xl mx-auto px-4 pb-16">
     <div id="loading" class="grid grid-cols-2 md:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map(() => (
@@ -74,9 +81,20 @@ import Navbar from '../components/Navbar.astro';
     <div id="modal-box" class="modal-box bg-surface rounded-2xl max-w-lg w-full overflow-hidden relative shadow-2xl">
       <button id="modal-close" class="absolute top-2 right-2 bg-white/90 hover:bg-white hover:scale-110 rounded-full w-8 h-8 font-bold z-10 transition">✕</button>
       <div id="modal-media"></div>
-      <div class="p-4">
+      <div class="p-4 max-h-[60vh] overflow-y-auto">
         <h3 id="modal-title" class="font-bold text-lg text-ink"></h3>
         <p id="modal-meta" class="text-sm text-ink-faint mt-1"></p>
+
+        <div class="mt-4 pt-4 border-t-2 border-line">
+          <p class="text-xs font-bold text-ink-soft mb-2">Komentar &amp; Feedback</p>
+          <div id="comment-list" class="space-y-2 mb-3"></div>
+          <div class="space-y-2">
+            <input id="comment-nama" type="text" placeholder="Nama kamu" class="w-full border-2 border-line rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none" />
+            <textarea id="comment-teks" rows="2" placeholder="Tulis apresiasi atau masukan..." class="w-full border-2 border-line rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none resize-none"></textarea>
+            <button id="comment-submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white rounded-lg py-2 text-sm font-bold transition">Kirim Komentar</button>
+            <p id="comment-error" class="text-red-500 text-xs font-bold hidden"></p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -84,11 +102,19 @@ import Navbar from '../components/Navbar.astro';
   <script>
 	// @ts-nocheck
     import { db } from '../lib/firebase.js';
-    import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+    import { collection, query, where, orderBy, getDocs, doc, updateDoc, addDoc, increment, serverTimestamp } from 'firebase/firestore';
 
     let allKarya = [];
     let activeCat = 'Semua';
     let activeKelas = 'Semua';
+    let searchQuery = '';
+
+    function getLikedIds() {
+      try { return JSON.parse(localStorage.getItem('sahara-liked') || '[]'); } catch { return []; }
+    }
+    function saveLikedIds(ids) {
+      localStorage.setItem('sahara-liked', JSON.stringify(ids));
+    }
 
     const grid = document.getElementById('gallery-grid');
     const loading = document.getElementById('loading');
@@ -146,13 +172,16 @@ import Navbar from '../components/Navbar.astro';
     }
 
     function render() {
+      const q = searchQuery.trim().toLowerCase();
       const filtered = allKarya.filter((k) => {
         const matchCat = activeCat === 'Semua' || k.kategori === activeCat;
         const matchKelas = activeKelas === 'Semua' || String(k.kelas) === activeKelas;
-        return matchCat && matchKelas;
+        const matchSearch = !q || (k.nama || '').toLowerCase().includes(q) || (k.judul || '').toLowerCase().includes(q);
+        return matchCat && matchKelas && matchSearch;
       });
       grid.innerHTML = '';
       empty.classList.toggle('hidden', filtered.length > 0);
+      const likedIds = getLikedIds();
       filtered.forEach((k, idx) => {
         const thumbUrl = optimizedUrl(k.mediaUrl, 400);
         const card = document.createElement('div');
@@ -177,19 +206,124 @@ import Navbar from '../components/Navbar.astro';
           </div>
           <div class="p-2.5 flex items-center gap-2">
             <span class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[11px] shrink-0" style="background:${avatarColor(k.nama)}">${initials(k.nama)}</span>
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <p class="text-sm font-bold text-ink truncate">${k.judul ?? ''}</p>
               <p class="text-[11px] text-ink-faint truncate">${k.nama ?? ''} &middot; Kelas ${k.kelas ?? ''}</p>
             </div>
+            <button class="like-btn shrink-0 flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full transition ${likedIds.includes(k.id) ? 'text-white bg-brand-500' : 'text-ink-soft bg-canvas hover:bg-brand-50'}" data-id="${k.id}">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="${likedIds.includes(k.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+              <span class="like-count">${k.likes || 0}</span>
+            </button>
           </div>
         `;
         card.addEventListener('click', () => openModal(k));
+        const likeBtn = card.querySelector('.like-btn');
+        likeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleLike(k, likeBtn);
+        });
         grid.appendChild(card);
         observer.observe(card);
       });
     }
 
+    async function toggleLike(k, btn) {
+      const likedIds = getLikedIds();
+      const already = likedIds.includes(k.id);
+      const countEl = btn.querySelector('.like-count');
+      const delta = already ? -1 : 1;
+      k.likes = Math.max(0, (k.likes || 0) + delta);
+      countEl.textContent = k.likes;
+      btn.classList.toggle('bg-brand-500', !already);
+      btn.classList.toggle('text-white', !already);
+      btn.classList.toggle('text-ink-soft', already);
+      btn.classList.toggle('bg-canvas', already);
+      btn.querySelector('svg').setAttribute('fill', already ? 'none' : 'currentColor');
+      const newLiked = already ? likedIds.filter((id) => id !== k.id) : [...likedIds, k.id];
+      saveLikedIds(newLiked);
+      try {
+        await updateDoc(doc(db, 'karya', k.id), { likes: increment(delta) });
+      } catch (err) {
+        console.error('Gagal update like', err);
+      }
+    }
+
+    let currentKarya = null;
+
+    function timeAgo(ts) {
+      if (!ts?.toDate) return '';
+      const diff = (Date.now() - ts.toDate().getTime()) / 1000;
+      if (diff < 60) return 'baru saja';
+      if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+      return `${Math.floor(diff / 86400)} hari lalu`;
+    }
+
+    async function loadComments(karyaId) {
+      const listEl = document.getElementById('comment-list');
+      listEl.innerHTML = '<p class="text-xs text-ink-faint">Memuat komentar...</p>';
+      try {
+        const q = query(collection(db, 'komentar'), where('karyaId', '==', karyaId), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          listEl.innerHTML = '<p class="text-xs text-ink-faint">Belum ada komentar. Jadi yang pertama!</p>';
+          return;
+        }
+        listEl.innerHTML = '';
+        snap.forEach((d) => {
+          const c = d.data();
+          const row = document.createElement('div');
+          row.className = 'bg-canvas rounded-xl p-2.5';
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-[10px] shrink-0" style="background:${avatarColor(c.nama)}">${initials(c.nama)}</span>
+              <p class="text-xs font-bold text-ink">${c.nama ?? 'Anonim'}</p>
+              <p class="text-[10px] text-ink-faint ml-auto">${timeAgo(c.createdAt)}</p>
+            </div>
+            <p class="text-sm text-ink-soft mt-1.5 ml-8">${c.teks ?? ''}</p>
+          `;
+          listEl.appendChild(row);
+        });
+      } catch (err) {
+        console.error(err);
+        listEl.innerHTML = '<p class="text-xs text-red-500">Gagal memuat komentar.</p>';
+      }
+    }
+
+    document.getElementById('comment-submit')?.addEventListener('click', async () => {
+      const nama = document.getElementById('comment-nama').value.trim();
+      const teks = document.getElementById('comment-teks').value.trim();
+      const errorEl = document.getElementById('comment-error');
+      errorEl.classList.add('hidden');
+      if (!nama || !teks) {
+        errorEl.textContent = 'Isi nama dan komentarnya dulu ya.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (!currentKarya) return;
+      const btn = document.getElementById('comment-submit');
+      btn.disabled = true;
+      btn.textContent = 'Mengirim...';
+      try {
+        await addDoc(collection(db, 'komentar'), {
+          karyaId: currentKarya.id,
+          karyaJudul: currentKarya.judul ?? '',
+          nama, teks,
+          createdAt: serverTimestamp(),
+        });
+        document.getElementById('comment-teks').value = '';
+        loadComments(currentKarya.id);
+      } catch (err) {
+        errorEl.textContent = 'Gagal mengirim: ' + err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirim Komentar';
+      }
+    });
+
     function openModal(k) {
+      currentKarya = k;
       const modal = document.getElementById('modal');
       const box = document.getElementById('modal-box');
       const mediaUrl = optimizedUrl(k.mediaUrl, 800);
@@ -199,12 +333,17 @@ import Navbar from '../components/Navbar.astro';
         k.mediaType === 'video'
           ? `<video src="${mediaUrl}" controls class="w-full max-h-96"></video>`
           : `<img src="${mediaUrl}" class="w-full max-h-96 object-contain" />`;
+      document.getElementById('comment-nama').value = '';
+      document.getElementById('comment-teks').value = '';
+      document.getElementById('comment-error').classList.add('hidden');
+      loadComments(k.id);
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       requestAnimationFrame(() => box.classList.add('shown'));
     }
 
     function closeModal() {
+      currentKarya = null;
       const modal = document.getElementById('modal');
       const box = document.getElementById('modal-box');
       const media = document.getElementById('modal-media');
@@ -242,6 +381,15 @@ import Navbar from '../components/Navbar.astro';
     });
 
     loadKarya();
+
+    let searchDebounce;
+    document.getElementById('search-input')?.addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        searchQuery = e.target.value;
+        render();
+      }, 200);
+    });
   </script>
 
   <script>

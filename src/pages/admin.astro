@@ -29,9 +29,9 @@ import Navbar from '../components/Navbar.astro';
           <div>
             <h2 class="text-2xl font-bold text-ink">Unggah Karya Siswa</h2>
             <p class="text-sm text-ink-soft mt-1">
-              Pilih satu atau beberapa foto/video sekaligus kalau mau unggah banyak karya dalam satu waktu.
-              Nanti kamu tinggal isi nama, kelas, kategori, dan judul untuk masing-masing di bawah —
-              boleh dikosongkan kalau karyanya berupa hasil kegiatan bersama (misalnya kegiatan literasi satu kelas/kelompok), bukan karya perorangan.
+              Pilih satu atau beberapa foto/video sekaligus jika ingin mengunggah banyak karya dalam satu waktu.
+              Lalu isi nama, kelas, kategori, dan judul untuk masing-masing di bawah.
+              boleh dikosongkan jika karyanya berupa hasil kegiatan bersama (misalnya kegiatan literasi satu kelas/kelompok), bukan karya perorangan.
             </p>
           </div>
         </div>
@@ -74,6 +74,18 @@ import Navbar from '../components/Navbar.astro';
         </div>
 
         <div id="karya-list" class="space-y-2">
+          <p class="text-sm text-ink-faint">Memuat...</p>
+        </div>
+      </section>
+
+      <section class="fade-in-up bg-surface border-2 border-line rounded-2xl p-6" style="animation-delay:0.15s">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="shrink-0 w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-bold text-sm flex items-center justify-center">3</span>
+          <div>
+            <h2 class="text-2xl font-bold text-ink">Kelola Komentar</h2>
+          </div>
+        </div>
+        <div id="komentar-list" class="space-y-2">
           <p class="text-sm text-ink-faint">Memuat...</p>
         </div>
       </section>
@@ -123,6 +135,47 @@ import Navbar from '../components/Navbar.astro';
     import { db } from '../lib/firebase.js';
     import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
     import { compressImage } from '../lib/compress.js';
+
+    const komentarListEl = document.getElementById('komentar-list');
+    async function loadKomentar() {
+      komentarListEl.innerHTML = '<p class="text-sm text-ink-faint">Memuat...</p>';
+      try {
+        const q = query(collection(db, 'komentar'), orderBy('createdAt', 'desc'), limit(100));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          komentarListEl.innerHTML = '<p class="text-sm text-ink-faint">Belum ada komentar.</p>';
+          return;
+        }
+        komentarListEl.innerHTML = '';
+        snap.forEach((docSnap) => {
+          const c = docSnap.data();
+          const row = document.createElement('div');
+          row.className = 'flex items-start gap-3 bg-canvas border-2 border-line rounded-2xl p-3';
+          row.innerHTML = `
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-ink-faint">pada karya <span class="font-bold text-ink-soft">${c.karyaJudul || '(tanpa judul)'}</span></p>
+              <p class="font-bold text-sm text-ink mt-0.5">${c.nama || 'Anonim'}</p>
+              <p class="text-sm text-ink-soft mt-0.5">${c.teks || ''}</p>
+            </div>
+            <button class="komentar-delete-btn shrink-0 text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">Hapus</button>
+          `;
+          row.querySelector('.komentar-delete-btn').addEventListener('click', async () => {
+            const ok = await showConfirm('Hapus komentar ini?');
+            if (!ok) return;
+            try {
+              await deleteDoc(doc(db, 'komentar', docSnap.id));
+              showToast('Komentar dihapus.');
+              loadKomentar();
+            } catch (err) {
+              showToast('Gagal menghapus: ' + err.message, true);
+            }
+          });
+          komentarListEl.appendChild(row);
+        });
+      } catch (err) {
+        komentarListEl.innerHTML = '<p class="text-sm text-red-500">Gagal memuat komentar.</p>';
+      }
+    }
 
     const ADMIN_PASSWORD = import.meta.env.PUBLIC_ADMIN_PASSWORD;
     const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -218,6 +271,7 @@ import Navbar from '../components/Navbar.astro';
       gate.classList.add('hidden');
       panel.classList.remove('hidden');
       loadKarya();
+      loadKomentar();
     }
     document.getElementById('login-btn').addEventListener('click', () => {
       const val = document.getElementById('password-input').value;
@@ -226,6 +280,7 @@ import Navbar from '../components/Navbar.astro';
         gate.classList.add('hidden');
         panel.classList.remove('hidden');
         loadKarya();
+        loadKomentar();
       } else {
         document.getElementById('login-error').classList.remove('hidden');
       }
