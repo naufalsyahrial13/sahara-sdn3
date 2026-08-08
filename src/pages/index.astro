@@ -22,7 +22,7 @@ import Navbar from '../components/Navbar.astro';
         <span class="flex items-center gap-1.5 truncate">🎨 <span id="cat-label">Semua Kategori</span></span>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div id="cat-panel" class="hidden absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
+      <div id="cat-panel" class="dropdown-panel absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
         <button data-cat="Semua" class="filter-btn bg-ink text-white active">Semua</button>
         <button data-cat="Gambar" class="filter-btn bg-gambar-50 text-gambar-600">Gambar</button>
         <button data-cat="Cerita" class="filter-btn bg-cerita-50 text-cerita-600">Cerita</button>
@@ -38,7 +38,7 @@ import Navbar from '../components/Navbar.astro';
         <span class="flex items-center gap-1.5 truncate">🎓 <span id="kelas-label">Semua Kelas</span></span>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div id="kelas-panel" class="hidden absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
+      <div id="kelas-panel" class="dropdown-panel absolute z-20 mt-2 w-full bg-white border-2 border-line rounded-2xl p-3 shadow-xl flex flex-wrap gap-2">
         <button data-kelas="Semua" class="kelas-btn active">Semua Kelas</button>
         <button data-kelas="1" class="kelas-btn">Kelas 1</button>
         <button data-kelas="2" class="kelas-btn">Kelas 2</button>
@@ -239,6 +239,11 @@ import Navbar from '../components/Navbar.astro';
       btn.classList.toggle('text-ink-soft', already);
       btn.classList.toggle('bg-canvas', already);
       btn.querySelector('svg').setAttribute('fill', already ? 'none' : 'currentColor');
+      if (!already) {
+        btn.classList.remove('pop');
+        void btn.offsetWidth;
+        btn.classList.add('pop');
+      }
       const newLiked = already ? likedIds.filter((id) => id !== k.id) : [...likedIds, k.id];
       saveLikedIds(newLiked);
       try {
@@ -270,10 +275,13 @@ import Navbar from '../components/Navbar.astro';
           return;
         }
         listEl.innerHTML = '';
+        let idx = 0;
         snap.forEach((d) => {
           const c = d.data();
           const row = document.createElement('div');
-          row.className = 'bg-canvas rounded-xl p-2.5';
+          row.className = 'bg-canvas rounded-xl p-2.5 fade-in-up';
+          row.style.animationDelay = `${Math.min(idx, 6) * 70}ms`;
+          idx++;
           row.innerHTML = `
             <div class="flex items-center gap-2">
               <span class="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-[10px] shrink-0" style="background:${avatarColor(c.nama)}">${initials(c.nama)}</span>
@@ -401,21 +409,21 @@ import Navbar from '../components/Navbar.astro';
     const kelasLabel = document.getElementById('kelas-label');
 
     function closePanels() {
-      catPanel?.classList.add('hidden');
-      kelasPanel?.classList.add('hidden');
+      catPanel?.classList.remove('open');
+      kelasPanel?.classList.remove('open');
     }
 
     catTrigger?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const willOpen = catPanel.classList.contains('hidden');
+      const willOpen = !catPanel.classList.contains('open');
       closePanels();
-      if (willOpen) catPanel.classList.remove('hidden');
+      if (willOpen) catPanel.classList.add('open');
     });
     kelasTrigger?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const willOpen = kelasPanel.classList.contains('hidden');
+      const willOpen = !kelasPanel.classList.contains('open');
       closePanels();
-      if (willOpen) kelasPanel.classList.remove('hidden');
+      if (willOpen) kelasPanel.classList.add('open');
     });
     catPanel?.addEventListener('click', (e) => e.stopPropagation());
     kelasPanel?.addEventListener('click', (e) => e.stopPropagation());
@@ -425,13 +433,13 @@ import Navbar from '../components/Navbar.astro';
       btn.addEventListener('click', () => {
         const txt = btn.textContent.trim();
         catLabel.textContent = txt === 'Semua' ? 'Semua Kategori' : txt;
-        catPanel.classList.add('hidden');
+        catPanel.classList.remove('open');
       });
     });
     document.querySelectorAll('.kelas-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         kelasLabel.textContent = btn.textContent.trim();
-        kelasPanel.classList.add('hidden');
+        kelasPanel.classList.remove('open');
       });
     });
   </script>

@@ -21,7 +21,7 @@ const { title = 'SAHARA - SDN 3 Tirtomoyo' } = Astro.props;
   <link rel="manifest" href="/manifest.webmanifest" />
   <script is:inline src="/registerSW.js"></script>
 </head>
-<body class="bg-canvas text-ink min-h-screen antialiased">
+<body class="bg-canvas text-ink min-h-screen antialiased page-fade-body">
   <div class="page-blobs" aria-hidden="true">
     <div class="blob" style="width:140px;height:140px;background:#FFD166;top:4vh;left:-50px;"></div>
     <div class="blob" style="width:90px;height:90px;background:#EF798A;top:18vh;right:5vw;"></div>
@@ -32,5 +32,19 @@ const { title = 'SAHARA - SDN 3 Tirtomoyo' } = Astro.props;
     <div class="blob" style="width:95px;height:95px;background:#37C2AC;top:128vh;left:10vw;"></div>
   </div>
   <slot />
+  <script is:inline>
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href]');
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      let url;
+      try { url = new URL(a.href, window.location.href); } catch { return; }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname) return;
+      e.preventDefault();
+      document.body.classList.add('page-leaving');
+      setTimeout(() => { window.location.href = a.href; }, 160);
+    });
+  </script>
 </body>
 </html>
